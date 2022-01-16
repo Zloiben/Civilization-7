@@ -1,0 +1,2 @@
+# Экран
+SIZE = WIDTH, HEIGHT = 500, 500

@@ -8,6 +8,7 @@ from config import *
 from create_map import Map
 from random import randint
 from exceptions import *
+import random
 # Задачи:
 # -------------------------------------------------Сложные--------------------------------------------------------------
 
@@ -30,7 +31,7 @@ from exceptions import *
 # 1. Заменить рандомную генирацию мира на сид
 
 # ----------------------------------------------Баги--------------------------------------------------------------------
-# TODO: Налаживание текстур
+# TODO: Налаживание текстур 
 # ----------------------------------------------------------------------------------------------------------------------
 pygame.init()
 screen = pygame.display.set_mode(SIZE)
@@ -39,21 +40,127 @@ player = False
 # -------------------------Функции для отображения уровня и загрузки текстур--------------------------------------------
 
 
-def create_map(level):
-    global player
-    new_player, x, y = None, None, None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            if level[y][x] == 0:
-                TileClose('water', x, y)
-            elif level[y][x] == 2:
-                TileClose('cobblestone', x, y)
-            elif level[y][x] == 1:
-                TileAvailable('grass', x, y)
-                if player is False and randint(0, 100) > 80:
-                    player = Player(0, 0)
-    # вернем игрока, а также размер поля в клетках
-    return player, x, y
+class Cell:
+    def __init__(self):
+        self.type = 1
+        self.build = 0
+        self.resurses = 0
+
+    def __str__(self): return f"Cell: {self.type}, {self.build}, {self,resurses}"
+
+    def get_type(self) -> int: return self.type  # Возражает тип клетки
+
+    def get_object(self) -> int: return self.build  # Возражает обьект на клетке
+    
+    def get_resurses(self) -> int: return self.resurses  # Возражает обьект на клетке
+
+    def set_resurses(self, resurses: int): self.resurses = resurses  # Изменяет тип
+
+    def set_type(self, type: int): self.type = type  # Изменяет тип
+
+    def set_object(self, obj: int): self.build = obj  # Изменяет обьект на клетке
+
+
+class Map:
+    def __init__(self):
+        self.map = [[Cell() for _ in range(100)] for _ in range(100)]
+        self.typeImg = {0: "~", 1: "█", 2: "↑"}
+        self.player_pos = (50, 50)
+        self.render_map = Tile_map()
+        self.render_map.update()
+        self.render_map.draw
+        
+    def __str__(self): return self.map
+
+    def get_type(self, x: int, y: int) -> int: return self.map[y][x].get_type()  # Возражает тип клетки
+
+    def get_object(self, x: int, y: int) -> int: return self.map[y][x].get_object()  # Возражает что стоит на клетке
+
+    def set_type(self, x: int, y: int, type_cell: int): self.map[y][x].set_type(type_cell)  # Изменяет клетку
+
+    def set_object(self, x: int, y: int, object_type: int):  self.map[y][x].set_object(object_type)  # Изменяет объект
+
+    def get_player_pos(self): self.player_pos  # Возражает позицию игрока
+
+    def set_player_pos(self, x: int, y: int):  self.player_pos = (x, y)  # Изменяет позицию игрока
+    
+    def draw_tile_map(self): self.render_map.draw()
+    
+    def draw_tile_map(self): self.render_map.update()
+    
+    def generation_map(self, width: int = 100, height: int = 100):
+        mp = [[0 for _ in range(width)] for _ in range(height)]
+
+        for _ in range(10):
+            mp[random.randint(20, 80)][random.randint(20, 80)] = 3
+        pr = 3
+        while True:
+            for y in range(100):
+                for x in range(100):
+                    if mp[y][x] == pr:
+                        mp[y][x] = 1
+                        ra = random.randint(0, 100)
+                        if ra >= (pr - 3) * 5:
+                            if mp[y + 1][x] == 0:
+                                mp[y + 1][x] = pr + 1
+                            if mp[y - 1][x] == 0:
+                                mp[y - 1][x] = pr + 1
+                            if mp[y][x + 1] == 0:
+                                mp[y][x + 1] = pr + 1
+                            if mp[y][x - 1] == 0:
+                                mp[y][x - 1] = pr + 1
+            pr += 1
+            f = True
+            for i in mp:
+                if pr in i:
+                    f = False
+            if f:
+                break
+        print("continental generation: Done")
+        for i in range(20):
+            x = random.randint(20, 80)
+            y = random.randint(20, 80)
+            while mp[x][y] != 1:
+                x = random.randint(20, 80)
+                y = random.randint(20, 80)
+            mp[x][y] = 3
+        pr = 3
+        while True:
+            for y in range(100):
+                for x in range(100):
+                    if mp[y][x] == pr:
+                        mp[y][x] = 2
+                        ra = random.randint(0, 100)
+                        if ra >= (pr - 3) * 15:
+                            if mp[y + 1][x] == 1:
+                                mp[y + 1][x] = pr + 1
+                            if mp[y - 1][x] == 1:
+                                mp[y - 1][x] = pr + 1
+                            if mp[y][x + 1] == 1:
+                                mp[y][x + 1] = pr + 1
+                            if mp[y][x - 1] == 1:
+                                mp[y][x - 1] = pr + 1
+            pr += 1
+            f = True
+            for i in mp:
+                if pr in i:
+                    f = False
+            if f:
+                break
+        print("forest generation: Done")
+
+        for i in range(100):
+            for l in range(100):
+                self.set_type(i, l, mp[l][i])
+        self.set_type(0, 0, 2)
+        self.set_type(0, 1, 1)
+        drdic = {0:"~", 1:"█", 2:"↑"}
+        for i in range(100):
+            for l in range(100):
+                print(drdic[mp[l][i]], end="")
+            print()
+        return mp
+
 
 
 def load_map():
@@ -77,7 +184,9 @@ def load_image(images_data, name, color_key=None):
         image = pygame.image.load(fullname)
     except pygame.error as message:
         print('Не удаётся загрузить:', name)
-        raise SystemExit(message)
+        fullname = os.path.join(f'data/images/Textures/error')
+        image = pygame.image.load(fullname)
+        raise
 
     image = image.convert_alpha()
 
@@ -125,9 +234,9 @@ def global_call(player_, mouse_position_x, mouse_position_y):
     """Определяет глобальную клетку по позицию игрока"""
     # TODO: в будущем нужно добавить чтобы учитывались еще несколько разных спрайтов из за наложения
     player_position_x, player_position_y = player_.pos
-    global_cell_x, global_cell_y = 0, 0
-    global_cell_x = player_position_x - 4 + mouse_position_x
-    global_cell_y = player_position_y - 7 + mouse_position_y
+
+    global_cell_x = mouse_position_x
+    global_cell_y = mouse_position_y
 
     print(f" x: {global_cell_x}, y: {global_cell_y}")
     print(player_position_x, player_position_y)
@@ -268,35 +377,88 @@ def move_check(player_: Player, direction: str):
 
 # ---------------------------------------------Текстуры-----------------------------------------------------------------
 
-
-class Tile:
+class Tile_map:
+    """Класс создан для рендаринга карты по слоям. Через эту карту есть доступ к спрайтам, чтобы изменитять карту."""
+        def __init__(self, gen_map: Map):
+            self.map_1 = [[Tile("T", 0, x, y) for x in range(100)] for y in range(100)] #Карта типов клеток
+            self.map_2 = [[Tile("R", 0, x, y) for x in range(100)] for y in range(100)] #Карта ресурсов
+            self.map_3 = [[Tile("B", 0, x, y) for x in range(100)] for y in range(100)] #карта построек
+            self.true_map = gen_map
+            
+            all_sprites = pygame.sprite.Group()
+            lays_of_sprites = [pygame.sprite.Group(), pygame.sprite.Group(), pygame.sprite.Group()] 
+            gg_sprites = pygame.sprite.Group()
+            self.Hero = Hero(0, 0)
+            #0 - спрайты карты типов
+            #1 - спрайты карты ресурсов
+            #2 - спрайты карты типы
+            
+        def update(self):
+            """Приводит визуальную карту к текстовой."""
+            #первый слой
+            for y in range(100):
+                for x in range(100):
+                    self.map_1[y][x].change_image("T", self.true_map.get_type(x, y))
+                    self.map_1[y][x].update()
+            #второй слой
+            for y in range(100):
+                for x in range(100):
+                    self.map_2[y][x].change_image("R", self.true_map.get_resurses(x, y))
+                    self.map_1[y][x].update()
+            #третий слой
+            for y in range(100):
+                for x in range(100):
+                    self.map_3[y][x].change_image("B", self.true_map.get_object(x, y))
+                    self.map_1[y][x].update()
+            self.gg_sprites.update()
+            self.draw()
+        
+        def draw(self):
+                        """Рисует кадр"""
+            self.map_1.draw(screen)
+            self.map_2.draw(screen)
+            self.map_3.draw(screen)
+            self.gg_sprites.draw(screen)
+            
+            
+class Tile(pygame.sprite.Sprite):
     """Класс от которого будут наследоваться все текстуры"""
-    tile_images = {
-        "grass": load_image("Textures", "Grass.png"),
-        "cobblestone": load_image("Textures", "Cobblestone.png"),
-        "water": load_image("Textures", "Water.png")
-    }
-
-    def __init__(self, tile_type: str, pos_x: int, pos_y: int):
-        self.image = Tile.tile_images[tile_type]
+    def __init__(self, tile_type: str, tile_num: str, pos_x: int, pos_y: int):
+        pygame.sprite.__init__(self)
+        dic = {"T": gameMap.tile_map.lays_of_sprites[0],
+        "R": gameMap.tile_map.lays_of_sprites[1],
+        "B": gameMap.tile_map.lays_of_sprites[2]}
+        self.add(gameMap.all_sprites, dic)
+        self.image = load_image("Textures", (tile_type) + (tile_num) + ".png")
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+    
+    def change_image(self, tile_type, tile_num):
+        elf.image = load_image("Textures", (tile_type) + (tile_num) + ".png")
 
-
-class TileAvailable(Tile, pygame.sprite.Sprite):
-    """Спрайты через которые можно проходить"""
-
-    def __init__(self, tile_type, pos_x, pos_y):
-        super(TileAvailable, self).__init__(tile_type, pos_x, pos_y)
-        super(Tile, self).__init__(tiles_available_group, all_sprites)
-
-
-class TileClose(Tile, pygame.sprite.Sprite):
-    """Спрайты через которые нельзя проходить"""
-
-    def __init__(self, tile_type, pos_x, pos_y):
-        super(TileClose, self).__init__(tile_type, pos_x, pos_y)
-        super(Tile, self).__init__(tiles_close_group, all_sprites)
+class Hero(pygame.sprite.Sprite):
+    """Класс от которого будут наследоваться все текстуры"""
+    def __init__(self, , pos_x: int, pos_y: int):
+        pygame.sprite.__init__(self)
+        self.add(gameMap.all_sprites, gameMap.gg_sprites)
+        self.image = load_image("Entity/Player", "Hero.png")
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+        
+#class TileAvailable(Tile, pygame.sprite.Sprite):
+#   """Спрайты через которые можно проходить"""
+#
+#    def __init__(self, tile_type, pos_x, pos_y):
+#        super(TileAvailable, self).__init__(tile_type, pos_x, pos_y)
+#        super(Tile, self).__init__(tiles_available_group, all_sprites)
+#
+#
+#class TileClose(Tile, pygame.sprite.Sprite):
+#    """Спрайты через которые нельзя проходить"""
+#
+#    def __init__(self, tile_type, pos_x, pos_y):
+#        super(TileClose, self).__init__(tile_type, pos_x, pos_y)
+#        super(Tile, self).__init__(tiles_close_group, all_sprites)
 
 
 # ---------------------------------------------Здания-------------------------------------------------------------------
@@ -312,19 +474,15 @@ class Building:
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-all_sprites = pygame.sprite.Group()
-tiles_available_group = pygame.sprite.Group()  # Спрайты через которые можно проходить
-tiles_close_group = pygame.sprite.Group()  # Спрайты через которые нельзя проходить
-player_group = pygame.sprite.Group()
+
 
 clock = pygame.time.Clock()
-
-
 gameMap = Map()
+gameMap.genMap()
 camera = Camera()
-map_data = gameMap.generation_map()
 player, level_x, level_y = create_map(map_data)
-camera.update(player)
+camera.update(gameMap.render_map.map_1[gameMap.get_player_pos[0]]
+    [gameMap.get_player_pos[1]])
 for sprite in all_sprites:
     camera.apply(sprite)
 running = True
@@ -336,20 +494,26 @@ while running:
             get_camera_cell(event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                move_check(player, "up")
+                gameMap.set_player_pos(gameMap.get_player_pos[0],
+                    gameMap.get_player_pos[1] - 1)
             elif event.key == pygame.K_DOWN:
-                move_check(player, "down")
+                gameMap.set_player_pos(gameMap.get_player_pos[0],
+                    gameMap.get_player_pos[1] + 1)
             elif event.key == pygame.K_LEFT:
-                move_check(player, "left")
+                gameMap.set_player_pos(gameMap.get_player_pos[0] + 1,
+                    gameMap.get_player_pos[1])
             elif event.key == pygame.K_RIGHT:
-                move_check(player, "right")
-
-            camera.update(player)
+                gameMap.set_player_pos(gameMap.get_player_pos[0] - 1,
+                    gameMap.get_player_pos[1] - 1)
+            camera.update(gameMap.render_map.map_1[gameMap.get_player_pos[0]]
+                [gameMap.get_player_pos[1]])
             for sprite in all_sprites:
                 camera.apply(sprite)
     screen.fill(pygame.Color("black"))
-    all_sprites.draw(screen)
-    player_group.draw(screen)
+    gameMap.draw()
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()
+
+# Я Богдан. Ну я богом дан. Я приёмный сын пениса и сводный сын Валеры
+

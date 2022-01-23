@@ -15,11 +15,11 @@ from exceptions import *
 # TODO: Реализовать экономику
 # TODO: Реализовать разные классы героя
 # TODO: Реализовать войско
-
+# TODO: Реализовать столкновение 2.0
 # -------------------------------------------------Средние--------------------------------------------------------------
-
+# TODO: Реализовать настройки в которых можно изменить размер мира и тд
 # --------------------------------------------------Легкие--------------------------------------------------------------
-
+# TODO: Изменить Класс Map для внедрения в настройки
 # ------------------------------------------------Неизвестно------------------------------------------------------------
 # TODO: Реализвавать систуму добычи ресурсов
 #  При создании мера одновремменно с этим делать карту ресуров на которой будет отображаться количиство ходов до конца
@@ -39,7 +39,7 @@ player = False
 # -------------------------Функции для отображения уровня и загрузки текстур--------------------------------------------
 
 
-def generate_map(level):
+def create_map(level):
     global player
     new_player, x, y = None, None, None
     for y in range(len(level)):
@@ -51,7 +51,7 @@ def generate_map(level):
             elif level[y][x] == 1:
                 TileAvailable('grass', x, y)
                 if player is False and randint(0, 100) > 80:
-                    player = Player(x, y)
+                    player = Player(0, 0)
     # вернем игрока, а также размер поля в клетках
     return player, x, y
 
@@ -108,6 +108,38 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
+# -----------------------------------------Дополнительные функции-------------------------------------------------------
+
+
+def get_camera_cell(mouse_position):
+    """Определяет клетку которая, находится в камере"""
+    # x = int((mouse_position[0] - self.left) / self.cell_size)
+    # y = int((mouse_position[1] - self.top) / self.cell_size)
+    x = int(mouse_position[0] // tile_width)
+    y = int(mouse_position[1] // tile_height)
+    print(x, y)
+    global_call(player, x, y)
+
+
+def global_call(player_, mouse_position_x, mouse_position_y):
+    """Определяет глобальную клетку по позицию игрока"""
+    # TODO: в будущем нужно добавить чтобы учитывались еще несколько разных спрайтов из за наложения
+    player_position_x, player_position_y = player_.pos
+    global_cell_x, global_cell_y = 0, 0
+    global_cell_x = player_position_x - 4 + mouse_position_x
+    global_cell_y = player_position_y - 7 + mouse_position_y
+
+    print(f" x: {global_cell_x}, y: {global_cell_y}")
+    print(player_position_x, player_position_y)
+    test_global_cell(global_cell_x, global_cell_y)
+
+
+def test_global_cell(global_cell_x, global_cell_y):
+    map_data[global_cell_y][global_cell_x] = 2
+    for i in all_sprites.sprites():
+        print(i.rect)
+    # TileClose("cobblestone", global_cell_x, global_cell_y)
+    # tiles_close_group.add(TileClose("cobblestone", global_cell_x, global_cell_y))
 # -----------------------------------------Сущности---------------------------------------------------------------------
 
 
@@ -123,19 +155,14 @@ class Entity:
         "very far": 250
     }
 
-    def __init__(self, hp: int | float, damage: int | float, step: int, range_attack: str):
-        """
-        :param hp: Здоровье
-        :param damage: Урон
-        :param step: Количество Шагов
-        :param range_attack: Дальность атаки
-        """
+    def __init__(self, hp: int | float, damage: int | float, step: int, range_attack: str, pos_x: int, pos_y: int):
         self.hp = hp
         self.range_attack = Entity.range_attacks_data[range_attack]
         self.range_attack_name = range_attack
         self.damage = damage
         self.step = step
         self.MAX_STEPS = step
+        self.pos = pos_x, pos_y
 
     def __str__(self):
         return f"""
@@ -154,9 +181,9 @@ class Entity:
 
     def get_hp(self) -> int | float: return self.hp  # Возражает количество хп
 
-    def get_damage(self) -> int | float: return self.damage  # Возражает количество урона
+    def get_damage(self) -> int | float: return self.damage  # Возражает наносимый урон
 
-    def get_step(self) -> int: return self.step  # Возражает Количество оставшихся шагов
+    def get_step(self) -> int: return self.step  # Возражает количество оставшихся шагов
 
     # Функции для взаимодействия ---------------------------------------------------------------------------------------
 
@@ -166,24 +193,19 @@ class Entity:
 
     def new_motion(self): self.step = self.MAX_STEPS  # Обновляет количество шагов после завершения хода
 
-    # def move(self):  # Ход
-    #     pass
-    #     # # TODO: Пока что ограничений нет
-    #     # self.step -= 1
-    #     # if self.step == 0:
-    #     #     self.new_motion()
-    #     # if
+    def set_pos(self, x: int, y: int): self.pos = (x, y)
 
     # -------------------------------------------Функции для тестов-----------------------------------------------------
 
-    def set_hp(self, hp: int | float): self.hp = hp
+    def set_hp(self, hp: int | float): self.hp = hp  # Изменяет количество здоровья.
 
-    def set_damage(self, damage: int | float): self.damage = damage
+    def set_damage(self, damage: int | float): self.damage = damage  # Изменяет наносимый урон.
 
-    def set_step(self, step: int): self.step = step
+    def set_step(self, step: int): self.step = step  # Изменяет количество шагов.
 
-    def set_max_steps(self, step: int): self.MAX_STEPS = step
+    def set_max_steps(self, step: int): self.MAX_STEPS = step  # Изменяет максимальное количество шагов.
 
+    # Изменяет дальность атаки
     def set_range_attack(self, range_attack: str): self.range_attack = Entity.range_attacks_data[range_attack]
 
     # -------------------------------------------Тестовые функции------------------------------------------------------
@@ -194,15 +216,12 @@ class Player(Entity, pygame.sprite.Sprite):
 
     image = load_image("Entity/Player", "Hero.png")
 
-    def __init__(self, pos_x, pos_y):
-        super(Player, self).__init__(100, 15, 10, "nearby")
+    def __init__(self, pos_x: int, pos_y: int):
+        super(Player, self).__init__(100, 15, 10, "nearby", pos_x, pos_y)
         super(Entity, self).__init__(player_group, all_sprites)
         self.image = Player.image
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
-        self.pos = (pos_x, pos_y)
-
-    def set_pos(self, x, y): self.pos = (x, y)  # Изменяет его позицию
+            tile_width * pos_x, tile_height * pos_y)
 
 # ------------------------------------------Буду реализованны в будущем-------------------------------------------------
 
@@ -210,38 +229,39 @@ class Player(Entity, pygame.sprite.Sprite):
 class Knight(Entity, pygame.sprite.Sprite):
     """Рыцарь"""
 
-    def __init__(self):
-        super(Knight, self).__init__(250, 30, 5, "average")
+    def __init__(self, pos_x, pos_y):
+        super(Knight, self).__init__(250, 30, 5, "average", pos_x, pos_y)
 
 
 class Archer(Entity, pygame.sprite.Sprite):
     """Лучник"""
 
-    def __init__(self):
-        super(Archer, self).__init__(80, 30, 5, "far")
+    def __init__(self, pos_x, pos_y):
+        super(Archer, self).__init__(80, 30, 5, "far", pos_x, pos_y)
 
 
 # -------------------------Функции для игрока---------------------------------------------------------------------------
 
 
-def move_check(player: Player, direction: str):
-    x, y = player.pos
+def move_check(player_: Player, direction: str):
+    """Проверяет правильность совершаемого движения"""
+    x, y = player_.pos
     if direction == "up":
-        if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
-            player.set_pos(x, y - 1)
-            player.rect.y -= tile_height
+        # if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
+        player_.set_pos(x, y - 1)
+        player_.rect.y -= tile_height
     elif direction == "down":
-        if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
-            player.set_pos(x, y + 1)
-            player.rect.y += tile_height
+        # if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
+        player_.set_pos(x, y + 1)
+        player_.rect.y += tile_height
     elif direction == "left":
-        if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
-            player.set_pos(x - 1, y)
-            player.rect.x -= tile_width
+        # if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
+        player_.set_pos(x - 1, y)
+        player_.rect.x -= tile_width
     elif direction == "right":
-        if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
-            player.set_pos(x + 1, y)
-            player.rect.x += tile_width
+        # if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
+        player_.set_pos(x + 1, y)
+        player_.rect.x += tile_width
     else:
         raise DirectionError
 
@@ -257,7 +277,7 @@ class Tile:
         "water": load_image("Textures", "Water.png")
     }
 
-    def __init__(self, tile_type, pos_x, pos_y):
+    def __init__(self, tile_type: str, pos_x: int, pos_y: int):
         self.image = Tile.tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
@@ -273,6 +293,7 @@ class TileAvailable(Tile, pygame.sprite.Sprite):
 
 class TileClose(Tile, pygame.sprite.Sprite):
     """Спрайты через которые нельзя проходить"""
+
     def __init__(self, tile_type, pos_x, pos_y):
         super(TileClose, self).__init__(tile_type, pos_x, pos_y)
         super(Tile, self).__init__(tiles_close_group, all_sprites)
@@ -301,8 +322,8 @@ clock = pygame.time.Clock()
 
 gameMap = Map()
 camera = Camera()
-map_data = gameMap.genMap()
-player, level_x, level_y = generate_map(map_data)
+map_data = gameMap.generation_map()
+player, level_x, level_y = create_map(map_data)
 camera.update(player)
 for sprite in all_sprites:
     camera.apply(sprite)
@@ -311,6 +332,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            get_camera_cell(event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 move_check(player, "up")
@@ -324,7 +347,6 @@ while running:
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
-
     screen.fill(pygame.Color("black"))
     all_sprites.draw(screen)
     player_group.draw(screen)

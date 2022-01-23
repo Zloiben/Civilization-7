@@ -4,69 +4,39 @@ import random
 
 class Cell:
     def __init__(self):
-        self.space = 0
         self.type = 1
         self.build = 0
 
-    def __str__(self):
-        # для отладки
-        return f"Cell: {self.type}, {self.build}, {self.space}"
+    def __str__(self): return f"Cell: {self.type}, {self.build}"
 
-    def getType(self):
-        return self.type
+    def get_type(self) -> int: return self.type  # Возражает тип клетки
 
-    def getSpace(self):
-        return self.space
+    def get_object(self) -> int: return self.build  # Возражает обьект на клетке
 
-    def getBuild(self):
-        return self.build
+    def set_type(self, type_sprite: int): self.type = type_sprite  # Изменяет тип
 
-    def setType(self, x):
-        self.type = x
-
-    def setSpace(self, x):
-        self.space = x
-
-    def setBuild(self, x):
-        self.build = x
+    def set_object(self, obj: int): self.build = obj  # Изменяет обьект на клетке
 
 
 class Map:
     def __init__(self):
-        self.map = [[Cell() for l in range(100)] for i in range(100)]
-        self.typeImg = {0:"~", 1:"█", 2:"↑"}
+        self.map = [[Cell() for _ in range(100)] for _ in range(100)]
+        self.typeImg = {0: "~", 1: "█", 2: "↑"}
 
-    def __str__(self):
-        return self.map
+    def __str__(self): return self.map
 
-    def getCellType(self, x, y):
-        return self.map[y][x].getType()
+    def get_type(self, x: int, y: int) -> int: return self.map[y][x].get_type()  # Возражает тип клетки
 
-    def getCellSpace(self, x, y):
-        return self.map[y][x].getSpace()
+    def get_object(self, x: int, y: int) -> int: return self.map[y][x].get_object()  # Возражает что стоит на клетке
 
-    def getCellBuild(self, x, y):
-        return self.map[y][x].getBuild()
+    def set_type(self, x: int, y: int, type_cell: int): self.map[y][x].set_type(type_cell)  # Изменяет клетку
 
-    def setCellType(self, x, y, t):
-        self.map[y][x].setType(t)
+    def set_object(self, x: int, y: int, object_type: int):  self.map[y][x].set_object(object_type)  # Изменяет объект
 
-    def setCellSpace(self, x, y, s):
-        self.map[y][x].setSpace(s)
+    def generation_map(self, width: int = 100, height: int = 100):
+        mp = [[0 for _ in range(width)] for _ in range(height)]
 
-    def setCellBuild(self, x, y, b):
-        self.map[y][x].setBuild(b)
-
-    def updateMap(self):
-        global screen
-        for y in range(100):
-            for x in range(100):
-                screen.blit(self.typeImg[self.getCellType(x, y)],
-                            (x * 64, y * 64))
-
-    def genMap(self):
-        mp = [[0 for _ in range(100)] for _ in range(100)]
-        for i in range(10):
+        for _ in range(10):
             mp[random.randint(20, 80)][random.randint(20, 80)] = 3
         pr = 3
         while True:
@@ -126,12 +96,20 @@ class Map:
 
         for i in range(100):
             for l in range(100):
-                self.setCellType(i, l, mp[l][i])
-        self.setCellType(0, 0, 2)
-        self.setCellType(0, 1, 1)
+                self.set_type(i, l, mp[l][i])
+        self.set_type(0, 0, 2)
+        self.set_type(0, 1, 1)
         drdic = {0:"~", 1:"█", 2:"↑"}
         for i in range(100):
             for l in range(100):
                 print(drdic[mp[l][i]], end="")
             print()
         return mp
+
+
+if __name__ == "__main__":
+    gameMap = Map()
+    gameMap.genMap()
+    for i in range(len(gameMap.map)):
+        for j in range(len(gameMap.map[0])):
+            print(gameMap.map[i][j])

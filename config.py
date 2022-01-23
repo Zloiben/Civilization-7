@@ -7,4 +7,5 @@ tile_height = 32
 
 # Игра
 FPS = 100
+fast_game_option = True
 

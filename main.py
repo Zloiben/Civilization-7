@@ -36,6 +36,12 @@ import random
 pygame.init()
 screen = pygame.display.set_mode(SIZE)
 player = False
+# ---------------------------------------------Переменные игры----------------------------------------------------------
+
+soft_tile_typs = [0, 1, 2] #Типы блоков через которые можно проходить
+hard_tile_typs = [] #Типы блоков через которые нельзя проходить
+
+
 
 # -------------------------Функции для отображения уровня и загрузки текстур--------------------------------------------
 
@@ -75,6 +81,8 @@ class Map:
     def get_type(self, x: int, y: int) -> int: return self.map[y][x].get_type()  # Возражает тип клетки
 
     def get_object(self, x: int, y: int) -> int: return self.map[y][x].get_object()  # Возражает что стоит на клетке
+    
+    def get_resurses(self, x: int, y: int) -> int: return self.map[y][x].get_resurses()  # Возражает что стоит на клетке
 
     def set_type(self, x: int, y: int, type_cell: int): self.map[y][x].set_type(type_cell)  # Изменяет клетку
 
@@ -226,27 +234,26 @@ def get_camera_cell(mouse_position):
     # y = int((mouse_position[1] - self.top) / self.cell_size)
     x = int(mouse_position[0] // tile_width)
     y = int(mouse_position[1] // tile_height)
-    print(x, y)
-    global_call(player, x, y)
+    print(f"Кардинат по экрану x: {x}, y: {y}")
+    global_call(gameMap, x, y)
 
 
-def global_call(player_, mouse_position_x, mouse_position_y):
+def global_call(gmap = Map, mouse_position_x = int, mouse_position_y = int):
     """Определяет глобальную клетку по позицию игрока"""
     # TODO: в будущем нужно добавить чтобы учитывались еще несколько разных спрайтов из за наложения
-    player_position_x, player_position_y = player_.pos
+    player_position_x, player_position_y = gmap.get_player_pos
 
-    global_cell_x = mouse_position_x
-    global_cell_y = mouse_position_y
+    global_cell_x = mouse_position_x + player_position_x - 4
+    global_cell_y = mouse_position_y + player_position_y - 7
 
-    print(f" x: {global_cell_x}, y: {global_cell_y}")
-    print(player_position_x, player_position_y)
-    test_global_cell(global_cell_x, global_cell_y)
+    print(f"Кординаты по карте x: {global_cell_x}, y: {global_cell_y}")
+    print(f"Кординаты игрока x: {player_position_x}, y: {player_position_y}")
+    test_global_cell(gmap, global_cell_x, global_cell_y)
 
 
-def test_global_cell(global_cell_x, global_cell_y):
-    map_data[global_cell_y][global_cell_x] = 2
-    for i in all_sprites.sprites():
-        print(i.rect)
+def test_global_cell(gmap = Map, global_cell_x, global_cell_y):
+    gmap.set_type(global_cell_x, global_cell_y.y, 2)
+    gameMap.update
     # TileClose("cobblestone", global_cell_x, global_cell_y)
     # tiles_close_group.add(TileClose("cobblestone", global_cell_x, global_cell_y))
 # -----------------------------------------Сущности---------------------------------------------------------------------
@@ -352,25 +359,22 @@ class Archer(Entity, pygame.sprite.Sprite):
 # -------------------------Функции для игрока---------------------------------------------------------------------------
 
 
-def move_check(player_: Player, direction: str):
+def move_check(direction: str):
+    global gameMap
     """Проверяет правильность совершаемого движения"""
     x, y = player_.pos
     if direction == "up":
-        # if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
-        player_.set_pos(x, y - 1)
-        player_.rect.y -= tile_height
+        if gameMap.get_type(gameMap.get_player_pos[0], gameMap.get_player_pos[1] - 1) in soft_tile_typs:
+            gameMap.set_player_pos(gameMap.get_player_pos[0], gameMap.get_player_pos[1] - 1)
     elif direction == "down":
-        # if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
-        player_.set_pos(x, y + 1)
-        player_.rect.y += tile_height
+        if gameMap.get_type(gameMap.get_player_pos[0],gameMap.get_player_pos[1] + 1) in soft_tile_typs:
+            gameMap.set_player_pos(gameMap.get_player_pos[0],gameMap.get_player_pos[1] + 1)
     elif direction == "left":
-        # if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
-        player_.set_pos(x - 1, y)
-        player_.rect.x -= tile_width
+        if gameMap.get_type(gameMap.get_player_pos[0] + 1, gameMap.get_player_pos[1]) in soft_tile_typs:
+            gameMap.set_player_pos(gameMap.get_player_pos[0] + 1, gameMap.get_player_pos[1])
     elif direction == "right":
-        # if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
-        player_.set_pos(x + 1, y)
-        player_.rect.x += tile_width
+        if gameMap.get_type(gameMap.get_player_pos[0] - 1, gameMap.get_player_pos[1]) in soft_tile_typs:
+            gameMap.set_player_pos(gameMap.get_player_pos[0] - 1, gameMap.get_player_pos[1])
     else:
         raise DirectionError
 
@@ -380,15 +384,15 @@ def move_check(player_: Player, direction: str):
 class Tile_map:
     """Класс создан для рендаринга карты по слоям. Через эту карту есть доступ к спрайтам, чтобы изменитять карту."""
         def __init__(self, gen_map: Map):
-            self.map_1 = [[Tile("T", 0, x, y) for x in range(100)] for y in range(100)] #Карта типов клеток
-            self.map_2 = [[Tile("R", 0, x, y) for x in range(100)] for y in range(100)] #Карта ресурсов
-            self.map_3 = [[Tile("B", 0, x, y) for x in range(100)] for y in range(100)] #карта построек
+            self.map_1 = [[Tile(self, "T", 0, x, y) for x in range(100)] for y in range(100)] #Карта типов клеток
+            self.map_2 = [[Tile(self, "R", 0, x, y) for x in range(100)] for y in range(100)] #Карта ресурсов
+            self.map_3 = [[Tile(self, "B", 0, x, y) for x in range(100)] for y in range(100)] #карта построек
             self.true_map = gen_map
             
             all_sprites = pygame.sprite.Group()
             lays_of_sprites = [pygame.sprite.Group(), pygame.sprite.Group(), pygame.sprite.Group()] 
             gg_sprites = pygame.sprite.Group()
-            self.Hero = Hero(0, 0)
+            self.hero = Hero(self, 0, 0)
             #0 - спрайты карты типов
             #1 - спрайты карты ресурсов
             #2 - спрайты карты типы
@@ -410,40 +414,45 @@ class Tile_map:
                 for x in range(100):
                     self.map_3[y][x].change_image("B", self.true_map.get_object(x, y))
                     self.map_1[y][x].update()
-            self.gg_sprites.update()
+            self.update_hero_sprite
             self.draw()
+        
+        def update_hero_sprite:
+            self.hero.update()
+            self.gg_sprites.update()
+            self.gg_sprites.draw(screen)
         
         def draw(self):
                         """Рисует кадр"""
-            self.map_1.draw(screen)
-            self.map_2.draw(screen)
-            self.map_3.draw(screen)
+            self.lays_of_sprites[3].draw(screen)
+            self.lays_of_sprites[1].draw(screen)
+            self.lays_of_sprites[2].draw(screen)
             self.gg_sprites.draw(screen)
             
             
 class Tile(pygame.sprite.Sprite):
     """Класс от которого будут наследоваться все текстуры"""
-    def __init__(self, tile_type: str, tile_num: str, pos_x: int, pos_y: int):
+    def __init__(self, tmap = Tile_map, tile_type: str, tile_num: str, pos_x: int, pos_y: int):
         pygame.sprite.__init__(self)
-        dic = {"T": gameMap.tile_map.lays_of_sprites[0],
-        "R": gameMap.tile_map.lays_of_sprites[1],
-        "B": gameMap.tile_map.lays_of_sprites[2]}
+        dic = {"T": tmap.lays_of_sprites[0],
+        "R": tmap.lays_of_sprites[1],
+        "B": tmap.lays_of_sprites[2]}
         self.add(gameMap.all_sprites, dic)
         self.image = load_image("Textures", (tile_type) + (tile_num) + ".png")
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x, tile_height * pos_y)
+            tile_width * pos_x, tile_height * pos_y - 18)
     
     def change_image(self, tile_type, tile_num):
         elf.image = load_image("Textures", (tile_type) + (tile_num) + ".png")
 
 class Hero(pygame.sprite.Sprite):
-    """Класс от которого будут наследоваться все текстуры"""
-    def __init__(self, , pos_x: int, pos_y: int):
+    """Класс спрайта героя"""
+    def __init__(self, tmap = Tile_map, pos_x: int, pos_y: int):
         pygame.sprite.__init__(self)
-        self.add(gameMap.all_sprites, gameMap.gg_sprites)
+        self.add(tmap.all_sprites, tmap.gg_sprites)
         self.image = load_image("Entity/Player", "Hero.png")
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x, tile_height * pos_y)
+            tile_width * pos_x, tile_height * pos_y - 18)
         
 #class TileAvailable(Tile, pygame.sprite.Sprite):
 #   """Спрайты через которые можно проходить"""
@@ -480,9 +489,7 @@ clock = pygame.time.Clock()
 gameMap = Map()
 gameMap.genMap()
 camera = Camera()
-player, level_x, level_y = create_map(map_data)
-camera.update(gameMap.render_map.map_1[gameMap.get_player_pos[0]]
-    [gameMap.get_player_pos[1]])
+camera.update(gameMap.render_map.hero])
 for sprite in all_sprites:
     camera.apply(sprite)
 running = True
@@ -494,19 +501,14 @@ while running:
             get_camera_cell(event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                gameMap.set_player_pos(gameMap.get_player_pos[0],
-                    gameMap.get_player_pos[1] - 1)
+                move_check("up")
             elif event.key == pygame.K_DOWN:
-                gameMap.set_player_pos(gameMap.get_player_pos[0],
-                    gameMap.get_player_pos[1] + 1)
+                move_check("down")
             elif event.key == pygame.K_LEFT:
-                gameMap.set_player_pos(gameMap.get_player_pos[0] + 1,
-                    gameMap.get_player_pos[1])
+                move_check("left")
             elif event.key == pygame.K_RIGHT:
-                gameMap.set_player_pos(gameMap.get_player_pos[0] - 1,
-                    gameMap.get_player_pos[1] - 1)
-            camera.update(gameMap.render_map.map_1[gameMap.get_player_pos[0]]
-                [gameMap.get_player_pos[1]])
+                move_check("right")
+            camera.update(gameMap.render_map.hero)
             for sprite in all_sprites:
                 camera.apply(sprite)
     screen.fill(pygame.Color("black"))
@@ -516,4 +518,3 @@ while running:
 pygame.quit()
 
 # Я Богдан. Ну я богом дан. Я приёмный сын пениса и сводный сын Валеры
-

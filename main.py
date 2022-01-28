@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 
 import pygame
 
@@ -29,13 +30,12 @@ from exceptions import *
 
 # 1. Заменить рандомную генирацию мира на сид
 
-# ----------------------------------------------Баги--------------------------------------------------------------------
-# TODO: Налаживание текстур
 # ----------------------------------------------------------------------------------------------------------------------
 pygame.init()
 screen = pygame.display.set_mode(SIZE)
-player = False
 
+player = False
+Music = True
 # -------------------------Функции для отображения уровня и загрузки текстур--------------------------------------------
 
 
@@ -49,9 +49,12 @@ def create_map(level):
             elif level[y][x] == 2:
                 TileClose('cobblestone', x, y)
             elif level[y][x] == 1:
-                TileAvailable('grass', x, y)
-                if player is False and randint(0, 100) > 80:
-                    player = Player(0, 0)
+                if randint(0, 100) < 90:
+                    TileAvailable('grass', x, y)
+                else:
+                    TileAvailable('grass_2', x, y)
+                if player is False and randint(0, 100) < 80:
+                    player = Player(x, y)
     # вернем игрока, а также размер поля в клетках
     return player, x, y
 
@@ -88,7 +91,104 @@ def load_image(images_data, name, color_key=None):
 
     return image
 
-# -----------------------------------------Дополнительные классы--------------------------------------------------------
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+
+text = [(0, "Настройки."),
+        (0, "<- Назад"),
+        (1, "Музыка")]
+
+
+def draw_settings_screen():
+
+    fon = pygame.transform.scale(load_image("Menu", 'settings.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in text:
+        if line[0] == 0:
+            string_rendered = font.render(line[1], 1, pygame.Color('white'))
+        else:
+            string_rendered = font.render(line[1], 1, pygame.Color('Green'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        print(intro_rect)
+        screen.blit(string_rendered, intro_rect)
+
+
+def settings_screen():
+    global Music
+    draw_settings_screen()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                if event.pos[1] in range(90, 110):
+                    draw_start_screen()
+                    return
+                elif event.pos[1] in range(120, 140):
+                    if text[2][0] == 1:
+                        text[2] = (0, "Музыка")
+                        Music = False
+                    else:
+                        text[2] = (1, "Музыка")
+                        Music = True
+                    draw_settings_screen()
+        pygame.display.flip()
+
+
+def draw_start_screen():
+    intro_text = ["Начать игру",
+                  "Настройки"]
+
+    fon = pygame.transform.scale(load_image("Menu", 'fon.png'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        print(text_coord)
+        screen.blit(string_rendered, intro_rect)
+
+
+def start_screen():
+
+    draw_start_screen()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                print(event.pos)
+                if event.pos[1] in range(90, 110):
+                    settings_screen()
+                else:
+                    return  # начинаем игру
+        pygame.display.flip()
+
+
+start_screen()
+
+if Music:
+    pygame.mixer.music.load("data/sounds/fon.mp3")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(FON_VOLUME)
 
 
 class Camera:
@@ -109,36 +209,32 @@ class Camera:
 
 
 # -----------------------------------------Дополнительные функции-------------------------------------------------------
+# TODO: Будут реализованны в будущем
+
+# def get_camera_cell(mouse_position):
+#    """Определяет клетку которая, находится в камере"""
+#    # x = int((mouse_position[0] - self.left) / self.cell_size)
+#    # y = int((mouse_position[1] - self.top) / self.cell_size)
+#    x = int(mouse_position[0] // tile_width)
+#    y = int(mouse_position[1] // tile_height)
+#    print(x, y)
+#    global_call(player, x, y)
 
 
-def get_camera_cell(mouse_position):
-    """Определяет клетку которая, находится в камере"""
-    # x = int((mouse_position[0] - self.left) / self.cell_size)
-    # y = int((mouse_position[1] - self.top) / self.cell_size)
-    x = int(mouse_position[0] // tile_width)
-    y = int(mouse_position[1] // tile_height)
-    print(x, y)
-    global_call(player, x, y)
+# def global_call(player_, mouse_position_x, mouse_position_y):
+#     """Определяет глобальную клетку по позицию игрока"""
+#     player_position_x, player_position_y = player_.pos
+#     global_cell_x, global_cell_y = 0, 0
+#    global_cell_x = mouse_position_x
+#    global_cell_y = mouse_position_y
+#
+#    print(f" x: {global_cell_x}, y: {global_cell_y}")
+#    print(player_position_x, player_position_y)
+#    test_global_cell(global_cell_x, global_cell_y)
 
 
-def global_call(player_, mouse_position_x, mouse_position_y):
-    """Определяет глобальную клетку по позицию игрока"""
-    # TODO: в будущем нужно добавить чтобы учитывались еще несколько разных спрайтов из за наложения
-    player_position_x, player_position_y = player_.pos
-    global_cell_x, global_cell_y = 0, 0
-    global_cell_x = player_position_x - 4 + mouse_position_x
-    global_cell_y = player_position_y - 7 + mouse_position_y
-
-    print(f" x: {global_cell_x}, y: {global_cell_y}")
-    print(player_position_x, player_position_y)
-    test_global_cell(global_cell_x, global_cell_y)
-
-
-def test_global_cell(global_cell_x, global_cell_y):
-    map_data[global_cell_y][global_cell_x] = 2
-    for i in all_sprites.sprites():
-        print(i.rect)
-    # TileClose("cobblestone", global_cell_x, global_cell_y)
+# def test_global_cell(global_cell_x, global_cell_y):
+#     TileClose("cobblestone", global_cell_x, global_cell_y)
     # tiles_close_group.add(TileClose("cobblestone", global_cell_x, global_cell_y))
 # -----------------------------------------Сущности---------------------------------------------------------------------
 
@@ -175,37 +271,27 @@ class Entity:
         Максимальное количество шагов: {self.MAX_STEPS}
         {"-" * 200}
         """
-    # -------------------------------------------Основные функции-------------------------------------------------------
 
-    # Функции которые возвращают информацию о сущности -----------------------------------------------------------------
+    def get_hp(self) -> int | float: return self.hp
 
-    def get_hp(self) -> int | float: return self.hp  # Возражает количество хп
+    def get_damage(self) -> int | float: return self.damage
 
-    def get_damage(self) -> int | float: return self.damage  # Возражает наносимый урон
+    def get_step(self) -> int: return self.step
 
-    def get_step(self) -> int: return self.step  # Возражает количество оставшихся шагов
+    def attack(self, entity: Entity): entity.hp -= self.damage
 
-    # Функции для взаимодействия ---------------------------------------------------------------------------------------
-
-    def attack(self, entity: Entity): entity.hp -= self.damage  # Атакует указанное существо
-
-    # Функции для логики сущности --------------------------------------------------------------------------------------
-
-    def new_motion(self): self.step = self.MAX_STEPS  # Обновляет количество шагов после завершения хода
+    def new_motion(self): self.step = self.MAX_STEPS
 
     def set_pos(self, x: int, y: int): self.pos = (x, y)
 
-    # -------------------------------------------Функции для тестов-----------------------------------------------------
+    def set_hp(self, hp: int | float): self.hp = hp
 
-    def set_hp(self, hp: int | float): self.hp = hp  # Изменяет количество здоровья.
+    def set_damage(self, damage: int | float): self.damage = damage
 
-    def set_damage(self, damage: int | float): self.damage = damage  # Изменяет наносимый урон.
+    def set_step(self, step: int): self.step = step
 
-    def set_step(self, step: int): self.step = step  # Изменяет количество шагов.
+    def set_max_steps(self, step: int): self.MAX_STEPS = step
 
-    def set_max_steps(self, step: int): self.MAX_STEPS = step  # Изменяет максимальное количество шагов.
-
-    # Изменяет дальность атаки
     def set_range_attack(self, range_attack: str): self.range_attack = Entity.range_attacks_data[range_attack]
 
     # -------------------------------------------Тестовые функции------------------------------------------------------
@@ -214,12 +300,10 @@ class Entity:
 class Player(Entity, pygame.sprite.Sprite):
     """Главный персонаж"""
 
-    image = load_image("Entity/Player", "Hero.png")
-
     def __init__(self, pos_x: int, pos_y: int):
         super(Player, self).__init__(100, 15, 10, "nearby", pos_x, pos_y)
         super(Entity, self).__init__(player_group, all_sprites)
-        self.image = Player.image
+        self.image = load_image("Entity/Player", "Hup.png")
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
@@ -247,21 +331,25 @@ def move_check(player_: Player, direction: str):
     """Проверяет правильность совершаемого движения"""
     x, y = player_.pos
     if direction == "up":
-        # if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
-        player_.set_pos(x, y - 1)
-        player_.rect.y -= tile_height
+        if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
+            player_.set_pos(x, y - 1)
+            player_.rect.y -= tile_height
+            player_.image = load_image("Entity/Player", "Hback.png")
     elif direction == "down":
-        # if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
-        player_.set_pos(x, y + 1)
-        player_.rect.y += tile_height
+        if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
+            player_.set_pos(x, y + 1)
+            player_.rect.y += tile_height
+            player_.image = load_image("Entity/Player", "Hup.png")
     elif direction == "left":
-        # if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
-        player_.set_pos(x - 1, y)
-        player_.rect.x -= tile_width
+        if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
+            player_.set_pos(x - 1, y)
+            player_.rect.x -= tile_width
+            player_.image = load_image("Entity/Player", "Hleft.png")
     elif direction == "right":
-        # if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
-        player_.set_pos(x + 1, y)
-        player_.rect.x += tile_width
+        if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
+            player_.set_pos(x + 1, y)
+            player_.rect.x += tile_width
+            player_.image = load_image("Entity/Player", "Hright.png")
     else:
         raise DirectionError
 
@@ -273,6 +361,7 @@ class Tile:
     """Класс от которого будут наследоваться все текстуры"""
     tile_images = {
         "grass": load_image("Textures", "Grass.png"),
+        "grass_2": load_image("Textures", "Grass_2.png"),
         "cobblestone": load_image("Textures", "Cobblestone.png"),
         "water": load_image("Textures", "Water.png")
     }
@@ -332,8 +421,6 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            get_camera_cell(event.pos)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 move_check(player, "up")

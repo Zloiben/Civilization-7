@@ -49,7 +49,7 @@ def create_map(level):
             elif level[y][x] == 2:
                 TileClose('cobblestone', x, y)
             elif level[y][x] == 1:
-                if randint(0, 100) < 90:
+                if randint(0, 100) < 85:
                     TileAvailable('grass', x, y)
                 else:
                     TileAvailable('grass_2', x, y)
@@ -331,25 +331,25 @@ def move_check(player_: Player, direction: str):
     """Проверяет правильность совершаемого движения"""
     x, y = player_.pos
     if direction == "up":
+        player_.image = load_image("Entity/Player", "Hback.png")
         if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
             player_.set_pos(x, y - 1)
             player_.rect.y -= tile_height
-            player_.image = load_image("Entity/Player", "Hback.png")
     elif direction == "down":
+        player_.image = load_image("Entity/Player", "Hup.png")
         if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
             player_.set_pos(x, y + 1)
             player_.rect.y += tile_height
-            player_.image = load_image("Entity/Player", "Hup.png")
     elif direction == "left":
+        player_.image = load_image("Entity/Player", "Hleft.png")
         if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
             player_.set_pos(x - 1, y)
             player_.rect.x -= tile_width
-            player_.image = load_image("Entity/Player", "Hleft.png")
     elif direction == "right":
+        player_.image = load_image("Entity/Player", "Hright.png")
         if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
             player_.set_pos(x + 1, y)
             player_.rect.x += tile_width
-            player_.image = load_image("Entity/Player", "Hright.png")
     else:
         raise DirectionError
 

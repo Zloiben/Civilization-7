@@ -76,7 +76,7 @@ class Map:
                     if mp[y][x] == pr:
                         mp[y][x] = 2
                         ra = random.randint(0, 100)
-                        if ra >= (pr - 3) * 15:
+                        if ra >= (pr - 3) * 20:
                             if mp[y + 1][x] == 1:
                                 mp[y + 1][x] = pr + 1
                             if mp[y - 1][x] == 1:
@@ -92,7 +92,7 @@ class Map:
                     f = False
             if f:
                 break
-        print("forest generation: Done")
+        print("Hills generation: Done")
 
         for i in range(100):
             for l in range(100):

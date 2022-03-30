@@ -49,7 +49,7 @@ def create_map(level):
             elif level[y][x] == 2:
                 TileClose('cobblestone', x, y)
             elif level[y][x] == 1:
-                if randint(0, 100) < 85:
+                if randint(0, 100) < 50:
                     TileAvailable('grass', x, y)
                 else:
                     TileAvailable('grass_2', x, y)

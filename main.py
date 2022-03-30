@@ -9,6 +9,7 @@ from config import *
 from create_map import Map
 from random import randint
 from exceptions import *
+
 # Задачи:
 # -------------------------------------------------Сложные--------------------------------------------------------------
 
@@ -36,6 +37,8 @@ screen = pygame.display.set_mode(SIZE)
 
 player = False
 Music = True
+
+
 # -------------------------Функции для отображения уровня и загрузки текстур--------------------------------------------
 
 
@@ -103,7 +106,6 @@ text = [(0, "Настройки."),
 
 
 def draw_settings_screen():
-
     fon = pygame.transform.scale(load_image("Menu", 'settings.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
@@ -166,7 +168,6 @@ def draw_start_screen():
 
 
 def start_screen():
-
     draw_start_screen()
 
     while True:
@@ -211,31 +212,34 @@ class Camera:
 # -----------------------------------------Дополнительные функции-------------------------------------------------------
 # TODO: Будут реализованны в будущем
 
-# def get_camera_cell(mouse_position):
-#    """Определяет клетку которая, находится в камере"""
-#    # x = int((mouse_position[0] - self.left) / self.cell_size)
-#    # y = int((mouse_position[1] - self.top) / self.cell_size)
-#    x = int(mouse_position[0] // tile_width)
-#    y = int(mouse_position[1] // tile_height)
-#    print(x, y)
-#    global_call(player, x, y)
+
+def get_camera_cell(mouse_position):
+    """Определяет клетку которая, находится в камере"""
+    x = int(mouse_position[0] // tile_width)
+    y = int(mouse_position[1] // tile_height)
+    print(x, y)
+    global_call(player, x, y)
 
 
-# def global_call(player_, mouse_position_x, mouse_position_y):
-#     """Определяет глобальную клетку по позицию игрока"""
-#     player_position_x, player_position_y = player_.pos
-#     global_cell_x, global_cell_y = 0, 0
-#    global_cell_x = mouse_position_x
-#    global_cell_y = mouse_position_y
-#
-#    print(f" x: {global_cell_x}, y: {global_cell_y}")
-#    print(player_position_x, player_position_y)
-#    test_global_cell(global_cell_x, global_cell_y)
+def global_call(player_, local_x_pos, local_y_pos):
+    """Определяет глобальную клетку по позицию игрока"""
+    player_position_x, player_position_y = player_.pos
+    global_cell_x = local_x_pos + player_position_x - 5
+    global_cell_y = local_y_pos + player_position_y - 8
+
+    print(f" x: {global_cell_x}, y: {global_cell_y}")
+    print(player_position_x, player_position_y)
+    test_global_cell(global_cell_x, global_cell_y)
 
 
-# def test_global_cell(global_cell_x, global_cell_y):
-#     TileClose("cobblestone", global_cell_x, global_cell_y)
-    # tiles_close_group.add(TileClose("cobblestone", global_cell_x, global_cell_y))
+def get_sprite(x, y):
+    return all_sprites.sprites()[100 * y + x + 1]
+
+
+def test_global_cell(global_cell_x, global_cell_y):
+    get_sprite(global_cell_x, global_cell_y).image = load_image("Textures", "Water.png")
+
+
 # -----------------------------------------Сущности---------------------------------------------------------------------
 
 
@@ -306,6 +310,7 @@ class Player(Entity, pygame.sprite.Sprite):
         self.image = load_image("Entity/Player", "Hup.png")
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+
 
 # ------------------------------------------Буду реализованны в будущем-------------------------------------------------
 
@@ -392,11 +397,11 @@ class TileClose(Tile, pygame.sprite.Sprite):
 
 
 class Building:
-
     """Класс от которого будут наследоваться все здания"""
 
     def __init__(self):
         pass
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -407,7 +412,6 @@ tiles_close_group = pygame.sprite.Group()  # Спрайты через кото�
 player_group = pygame.sprite.Group()
 
 clock = pygame.time.Clock()
-
 
 gameMap = Map()
 camera = Camera()
@@ -430,7 +434,8 @@ while running:
                 move_check(player, "left")
             elif event.key == pygame.K_RIGHT:
                 move_check(player, "right")
-
+            else:
+                get_camera_cell(pygame.mouse.get_pos())
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)

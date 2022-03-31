@@ -55,6 +55,7 @@ def create_map(level):
                 TileType(1, x, y)
                 if player is False and randint(0, 100) < 80:
                     player = Player(x, y)
+    Start_Ui()
     # вернем игрока, а также размер поля в клетках
     return player, x, y
 
@@ -100,6 +101,10 @@ def terminate():
 text = [(0, "Настройки."),
         (0, "<- Назад"),
         (1, "Музыка")]
+
+
+def Start_Ui():
+    UiSprite(load_image("Ui", "Next_Tern_Button.png"), WIDTH - 144, HEIGHT - 144)
 
 
 def draw_settings_screen():
@@ -209,11 +214,12 @@ class Camera:
 # -----------------------------------------Дополнительные функции-------------------------------------------------------
 # TODO: Будут реализованны в будущем
 
-
 def get_camera_cell(mouse_position):
     """Определяет клетку которая, находится в камере"""
-    x = int(mouse_position[0] // tile_width)
-    y = int(mouse_position[1] // tile_height)
+    print(((HEIGHT % tile_height) // 2) + tile_height / 2)
+    x = int((mouse_position[0] - ((WIDTH % tile_width) // 2) + tile_width / 2) // tile_width)
+    y = int((mouse_position[1] - ((HEIGHT % tile_height) // 2) + tile_height / 2) // tile_height)
+    print(x, y)
     return x, y
 
 
@@ -221,8 +227,8 @@ def global_call(player_, mouse_position):
     local_x_pos, local_y_pos = get_camera_cell(mouse_position)
     """Определяет глобальную клетку по позицию игрока"""
     player_position_x, player_position_y = player_.pos
-    global_cell_x = local_x_pos + player_position_x - 5
-    global_cell_y = local_y_pos + player_position_y - 8
+    global_cell_x = local_x_pos + player_position_x - (WIDTH // tile_width) // 2
+    global_cell_y = local_y_pos + player_position_y - (HEIGHT // tile_height) // 2
 
     print(f" x: {global_cell_x}, y: {global_cell_y}")
     print(player_position_x, player_position_y)
@@ -236,6 +242,7 @@ def get_sprite(x, y):
 def buildTerr(player_, mouse_position):
     global_cell_x, global_cell_y = global_call(player_, mouse_position)
     get_sprite(global_cell_x, global_cell_y).change_type(1)
+
 
 def buildWat(player_, mouse_position):
     global_cell_x, global_cell_y = global_call(player_, mouse_position)
@@ -406,6 +413,15 @@ class TileClose(Tile, pygame.sprite.Sprite):
         super(Tile, self).__init__(tiles_close_group, all_sprites)
 
 
+class UiSprite(pygame.sprite.Sprite):
+    """Спрайты через которые нельзя проходить"""
+
+    def __init__(self, img, pos_x, pos_y):
+        self.image = img
+        self.rect = self.image.get_rect().move(pos_x, pos_y)
+        super(UiSprite, self).__init__(ui_sprites_group)
+
+
 # ---------------------------------------------Здания-------------------------------------------------------------------
 
 
@@ -421,6 +437,7 @@ class Building:
 
 all_sprites = pygame.sprite.Group()
 tiles_type_group = pygame.sprite.Group()  # Спрайты через которые можно проходить
+ui_sprites_group = pygame.sprite.Group()  # Спрайты Ui
 tiles_close_group = pygame.sprite.Group()  # Спрайты через которые нельзя проходить
 player_group = pygame.sprite.Group()
 
@@ -439,25 +456,26 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
+            if event.key in (pygame.K_UP, pygame.K_w):
                 move_check(player, "up")
-            elif event.key == pygame.K_DOWN:
+            elif event.key in (pygame.K_DOWN, pygame.K_s):
                 move_check(player, "down")
-            elif event.key == pygame.K_LEFT:
+            elif event.key in (pygame.K_LEFT, pygame.K_a):
                 move_check(player, "left")
-            elif event.key == pygame.K_RIGHT:
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
                 move_check(player, "right")
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                buildTerr(player ,pygame.mouse.get_pos())
+                buildTerr(player, pygame.mouse.get_pos())
             if event.button == 3:
-                buildWat(player ,pygame.mouse.get_pos())
+                buildWat(player, pygame.mouse.get_pos())
         camera.update(player)
         for sprite in all_sprites:
             camera.apply(sprite)
     screen.fill(pygame.Color("black"))
     all_sprites.draw(screen)
     player_group.draw(screen)
+    ui_sprites_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()

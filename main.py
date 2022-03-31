@@ -48,14 +48,11 @@ def create_map(level):
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == 0:
-                TileClose('water', x, y)
+                TileType(0, x, y)
             elif level[y][x] == 2:
-                TileClose('cobblestone', x, y)
+                TileType(2, x, y)
             elif level[y][x] == 1:
-                if randint(0, 100) < 50:
-                    TileAvailable('grass', x, y)
-                else:
-                    TileAvailable('grass_2', x, y)
+                TileType(1, x, y)
                 if player is False and randint(0, 100) < 80:
                     player = Player(x, y)
     # вернем игрока, а также размер поля в клетках
@@ -217,11 +214,11 @@ def get_camera_cell(mouse_position):
     """Определяет клетку которая, находится в камере"""
     x = int(mouse_position[0] // tile_width)
     y = int(mouse_position[1] // tile_height)
-    print(x, y)
-    global_call(player, x, y)
+    return x, y
 
 
-def global_call(player_, local_x_pos, local_y_pos):
+def global_call(player_, mouse_position):
+    local_x_pos, local_y_pos = get_camera_cell(mouse_position)
     """Определяет глобальную клетку по позицию игрока"""
     player_position_x, player_position_y = player_.pos
     global_cell_x = local_x_pos + player_position_x - 5
@@ -229,16 +226,20 @@ def global_call(player_, local_x_pos, local_y_pos):
 
     print(f" x: {global_cell_x}, y: {global_cell_y}")
     print(player_position_x, player_position_y)
-    test_global_cell(global_cell_x, global_cell_y)
+    return global_cell_x, global_cell_y
 
 
 def get_sprite(x, y):
-    return all_sprites.sprites()[100 * y + x + 1]
+    return tiles_type_group.sprites()[100 * y + x]
 
 
-def test_global_cell(global_cell_x, global_cell_y):
-    get_sprite(global_cell_x, global_cell_y).image = load_image("Textures", "Water.png")
+def buildTerr(player_, mouse_position):
+    global_cell_x, global_cell_y = global_call(player_, mouse_position)
+    get_sprite(global_cell_x, global_cell_y).change_type(1)
 
+def buildWat(player_, mouse_position):
+    global_cell_x, global_cell_y = global_call(player_, mouse_position)
+    get_sprite(global_cell_x, global_cell_y).change_type(0)
 
 # -----------------------------------------Сущности---------------------------------------------------------------------
 
@@ -337,22 +338,22 @@ def move_check(player_: Player, direction: str):
     x, y = player_.pos
     if direction == "up":
         player_.image = load_image("Entity/Player", "Hback.png")
-        if map_data[y - 1][x] != 0 and map_data[y - 1][x] != 2:
+        if get_sprite(x, y - 1).type == 1:
             player_.set_pos(x, y - 1)
             player_.rect.y -= tile_height
     elif direction == "down":
         player_.image = load_image("Entity/Player", "Hup.png")
-        if map_data[y + 1][x] != 0 and map_data[y + 1][x] != 2:
+        if get_sprite(x, y + 1).type == 1:
             player_.set_pos(x, y + 1)
             player_.rect.y += tile_height
     elif direction == "left":
         player_.image = load_image("Entity/Player", "Hleft.png")
-        if map_data[y][x - 1] != 0 and map_data[y][x - 1] != 2:
+        if get_sprite(x - 1, y).type == 1:
             player_.set_pos(x - 1, y)
             player_.rect.x -= tile_width
     elif direction == "right":
         player_.image = load_image("Entity/Player", "Hright.png")
-        if map_data[y][x + 1] != 0 and map_data[y][x + 1] != 2:
+        if get_sprite(x + 1, y).type == 1:
             player_.set_pos(x + 1, y)
             player_.rect.x += tile_width
     else:
@@ -365,10 +366,10 @@ def move_check(player_: Player, direction: str):
 class Tile:
     """Класс от которого будут наследоваться все текстуры"""
     tile_images = {
-        "grass": load_image("Textures", "Grass.png"),
-        "grass_2": load_image("Textures", "Grass_2.png"),
-        "cobblestone": load_image("Textures", "Cobblestone.png"),
-        "water": load_image("Textures", "Water.png")
+        "11": load_image("Textures", "Grass.png"),
+        "12": load_image("Textures", "Grass_2.png"),
+        "2": load_image("Textures", "Cobblestone.png"),
+        "0": load_image("Textures", "Water.png")
     }
 
     def __init__(self, tile_type: str, pos_x: int, pos_y: int):
@@ -376,13 +377,25 @@ class Tile:
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
+    def change_type(self, type_int):
+        pass
 
-class TileAvailable(Tile, pygame.sprite.Sprite):
+
+class TileType(Tile, pygame.sprite.Sprite):
     """Спрайты через которые можно проходить"""
 
-    def __init__(self, tile_type, pos_x, pos_y):
-        super(TileAvailable, self).__init__(tile_type, pos_x, pos_y)
-        super(Tile, self).__init__(tiles_available_group, all_sprites)
+    def __init__(self, type_int, pos_x, pos_y):
+        self.type = type_int
+        if self.type == 1:
+            type_int = str(self.type) + str(randint(1, 2))
+        super(TileType, self).__init__(str(type_int), pos_x, pos_y)
+        super(Tile, self).__init__(tiles_type_group, all_sprites)
+
+    def change_type(self, type_int):
+        self.type = type_int
+        if self.type == 1:
+            type_int = str(self.type) + str(randint(1, 2))
+        self.image = Tile.tile_images[str(type_int)]
 
 
 class TileClose(Tile, pygame.sprite.Sprite):
@@ -407,7 +420,7 @@ class Building:
 
 
 all_sprites = pygame.sprite.Group()
-tiles_available_group = pygame.sprite.Group()  # Спрайты через которые можно проходить
+tiles_type_group = pygame.sprite.Group()  # Спрайты через которые можно проходить
 tiles_close_group = pygame.sprite.Group()  # Спрайты через которые нельзя проходить
 player_group = pygame.sprite.Group()
 
@@ -434,11 +447,14 @@ while running:
                 move_check(player, "left")
             elif event.key == pygame.K_RIGHT:
                 move_check(player, "right")
-            else:
-                get_camera_cell(pygame.mouse.get_pos())
-            camera.update(player)
-            for sprite in all_sprites:
-                camera.apply(sprite)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                buildTerr(player ,pygame.mouse.get_pos())
+            if event.button == 3:
+                buildWat(player ,pygame.mouse.get_pos())
+        camera.update(player)
+        for sprite in all_sprites:
+            camera.apply(sprite)
     screen.fill(pygame.Color("black"))
     all_sprites.draw(screen)
     player_group.draw(screen)

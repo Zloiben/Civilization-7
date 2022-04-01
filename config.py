@@ -1,5 +1,5 @@
 # Экран
-SIZE = WIDTH, HEIGHT = 700, 700
+SIZE = WIDTH, HEIGHT = 1280, 720
 
 # Текстуры
 tile_width = 50

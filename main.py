@@ -216,11 +216,14 @@ class Camera:
 
 def get_camera_cell(mouse_position):
     """Определяет клетку которая, находится в камере"""
-    print(((HEIGHT % tile_height) // 2) + tile_height / 2)
-    x = int((mouse_position[0] - ((WIDTH % tile_width) // 2) + tile_width / 2) // tile_width)
-    y = int((mouse_position[1] - ((HEIGHT % tile_height) // 2) + tile_height / 2) // tile_height)
-    print(x, y)
-    return x, y
+    x = int(mouse_position[0] - (WIDTH % tile_width) // 2)
+    y = int(mouse_position[1] - (HEIGHT % tile_height) // 2)
+    if (HEIGHT // tile_height) % 2 == 0:
+        y += tile_height // 2
+    if (WIDTH // tile_width) % 2 == 0:
+        x += tile_width // 2
+    print(x // tile_width, y // tile_height)
+    return x // tile_width, y // tile_height
 
 
 def global_call(player_, mouse_position):
@@ -241,12 +244,13 @@ def get_sprite(x, y):
 
 def buildTerr(player_, mouse_position):
     global_cell_x, global_cell_y = global_call(player_, mouse_position)
-    get_sprite(global_cell_x, global_cell_y).change_type(1)
+    get_sprite(global_cell_x, global_cell_y).change_type(3)
 
 
 def buildWat(player_, mouse_position):
     global_cell_x, global_cell_y = global_call(player_, mouse_position)
     get_sprite(global_cell_x, global_cell_y).change_type(0)
+
 
 # -----------------------------------------Сущности---------------------------------------------------------------------
 
@@ -345,22 +349,22 @@ def move_check(player_: Player, direction: str):
     x, y = player_.pos
     if direction == "up":
         player_.image = load_image("Entity/Player", "Hback.png")
-        if get_sprite(x, y - 1).type == 1:
+        if get_sprite(x, y - 1).type not in (0, 2):
             player_.set_pos(x, y - 1)
             player_.rect.y -= tile_height
     elif direction == "down":
         player_.image = load_image("Entity/Player", "Hup.png")
-        if get_sprite(x, y + 1).type == 1:
+        if get_sprite(x, y + 1).type not in (0, 2):
             player_.set_pos(x, y + 1)
             player_.rect.y += tile_height
     elif direction == "left":
         player_.image = load_image("Entity/Player", "Hleft.png")
-        if get_sprite(x - 1, y).type == 1:
+        if get_sprite(x - 1, y).type not in (0, 2):
             player_.set_pos(x - 1, y)
             player_.rect.x -= tile_width
     elif direction == "right":
         player_.image = load_image("Entity/Player", "Hright.png")
-        if get_sprite(x + 1, y).type == 1:
+        if get_sprite(x + 1, y).type not in (0, 2):
             player_.set_pos(x + 1, y)
             player_.rect.x += tile_width
     else:
@@ -376,7 +380,8 @@ class Tile:
         "11": load_image("Textures", "Grass.png"),
         "12": load_image("Textures", "Grass_2.png"),
         "2": load_image("Textures", "Cobblestone.png"),
-        "0": load_image("Textures", "Water.png")
+        "0": load_image("Textures", "Water.png"),
+        "3": load_image("Textures", "Town.png")
     }
 
     def __init__(self, tile_type: str, pos_x: int, pos_y: int):
